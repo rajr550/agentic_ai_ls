@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="A sleek and modern Task Manager app to add, edit, delete, and track your tasks efficiently." />
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header__icon">🚀</div>
+      <h1 class="header__title">Task Manager</h1>
+      <p class="header__subtitle">Stay organized, stay productive.</p>
+    </header>
+
+    <!-- Input Card -->
+    <section class="input-card" aria-label="Add a new task">
+      <form class="input-card__form" id="task-form">
+        <input
+          type="text"
+          class="input-card__input"
+          id="task-input"
+          placeholder="What needs to be done?"
+          autocomplete="off"
+          maxlength="200"
+        />
+        <button type="submit" class="input-card__btn" id="add-btn">Add Task</button>
+      </form>
+    </section>
+
+    <!-- Stats -->
+    <div class="stats">
+      <span class="stats__label">Active tasks: <span class="stats__count" id="task-count">0</span></span>
+      <button class="stats__clear-btn hidden" id="clear-all">Clear All</button>
+    </div>
+
+    <!-- Task List -->
+    <section class="task-list" id="task-list" aria-label="Task list">
+      <div class="empty-state">
+        <div class="empty-state__icon">📋</div>
+        <p class="empty-state__text">No tasks yet. Add one above!</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
