@@ -1,0 +1,21 @@
+{
+  "name": "smart-task-planner",
+  "version": "1.0.0",
+  "description": "AI-powered Smart Task Planner using Google Gemini API",
+  "type": "module",
+  "main": "script.js",
+  "scripts": {
+    "start": "node script.js"
+  },
+  "keywords": [
+    "gemini",
+    "ai",
+    "task-planner"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^2.10.0",
+    "dotenv": "^17.4.2"
+  }
+}
