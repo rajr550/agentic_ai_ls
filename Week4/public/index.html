@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="FinTrack — Track your finances, get AI-powered insights, and take control of your money." />
+  <title>Home — FinTrack</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">💰</span>
+      <span class="sidebar__name">FinTrack</span>
+    </div>
+    <ul class="sidebar__nav">
+      <li><a href="/" class="sidebar__link active" data-page="home"><span class="sidebar__icon">🏠</span><span>Home</span></a></li>
+      <li><a href="/dashboard.html" class="sidebar__link" data-page="dashboard"><span class="sidebar__icon">📊</span><span>Dashboard</span></a></li>
+      <li><a href="/add-transaction.html" class="sidebar__link" data-page="add"><span class="sidebar__icon">➕</span><span>Add</span></a></li>
+      <li><a href="/history.html" class="sidebar__link" data-page="history"><span class="sidebar__icon">📜</span><span>History</span></a></li>
+      <li><a href="/reports.html" class="sidebar__link" data-page="reports"><span class="sidebar__icon">📈</span><span>Reports</span></a></li>
+      <li><a href="/assistant.html" class="sidebar__link" data-page="assistant"><span class="sidebar__icon">🤖</span><span>AI</span></a></li>
+      <li><a href="/settings.html" class="sidebar__link" data-page="settings"><span class="sidebar__icon">⚙️</span><span>Settings</span></a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero__icon">💰</div>
+      <h1 class="hero__title">FinTrack</h1>
+      <p class="hero__subtitle">Track your finances, get AI-powered insights, and take control of your money.</p>
+      <a href="/dashboard.html" class="btn btn--primary">Go to Dashboard →</a>
+    </section>
+
+    <!-- Feature Cards Grid -->
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-card__icon">📊</div>
+        <h3 class="feature-card__title">Track Spending</h3>
+        <p class="feature-card__desc">Log income &amp; expenses with categories to keep a clear picture of where your money goes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🤖</div>
+        <h3 class="feature-card__title">AI Insights</h3>
+        <p class="feature-card__desc">Get personalized financial advice from Gemini to make smarter money decisions.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">🎯</div>
+        <h3 class="feature-card__title">Budget Goals</h3>
+        <p class="feature-card__desc">Set monthly budgets and track progress so you never overspend again.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">📈</div>
+        <h3 class="feature-card__title">Visual Reports</h3>
+        <p class="feature-card__desc">Beautiful charts showing spending patterns to help you understand your habits.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="js/storage.js"></script>
+  <script>
+    function showToast(message, type = 'info') {
+      const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span>${message}</span>`;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => { toast.classList.add('removing'); toast.addEventListener('animationend', () => toast.remove()); }, 3500);
+    }
+  </script>
+</body>
+</html>

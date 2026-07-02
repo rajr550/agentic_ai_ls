@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Visualize your spending patterns and get AI-powered financial insights with FinTrack Reports." />
+  <title>Reports — FinTrack</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">💰</span>
+      <span class="sidebar__name">FinTrack</span>
+    </div>
+    <ul class="sidebar__nav">
+      <li><a href="/" class="sidebar__link" data-page="home"><span class="sidebar__icon">🏠</span><span>Home</span></a></li>
+      <li><a href="/dashboard.html" class="sidebar__link" data-page="dashboard"><span class="sidebar__icon">📊</span><span>Dashboard</span></a></li>
+      <li><a href="/add-transaction.html" class="sidebar__link" data-page="add"><span class="sidebar__icon">➕</span><span>Add</span></a></li>
+      <li><a href="/history.html" class="sidebar__link" data-page="history"><span class="sidebar__icon">📜</span><span>History</span></a></li>
+      <li><a href="/reports.html" class="sidebar__link active" data-page="reports"><span class="sidebar__icon">📈</span><span>Reports</span></a></li>
+      <li><a href="/assistant.html" class="sidebar__link" data-page="assistant"><span class="sidebar__icon">🤖</span><span>AI</span></a></li>
+      <li><a href="/settings.html" class="sidebar__link" data-page="settings"><span class="sidebar__icon">⚙️</span><span>Settings</span></a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-header__title">📈 Reports</h1>
+      <p class="page-header__subtitle">Visualize your spending and get AI insights</p>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="summary-row" style="grid-template-columns: repeat(2, 1fr);">
+      <!-- Doughnut Chart: Spending by Category -->
+      <div class="card">
+        <h2 class="card__title mb-16">🍩 Spending by Category</h2>
+        <div id="category-chart-area">
+          <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bar Chart: Income vs Expenses -->
+      <div class="card">
+        <h2 class="card__title mb-16">📊 Income vs Expenses</h2>
+        <div class="chart-container">
+          <canvas id="overviewChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Insights -->
+    <div class="ai-card">
+      <div class="ai-card__header">
+        <span>🤖</span>
+        <h3 class="ai-card__title">AI Financial Insights</h3>
+      </div>
+      <div class="ai-card__body" id="ai-body">
+        <p>Click the button below to get personalized AI-powered insights based on your financial data.</p>
+      </div>
+      <div class="mt-24">
+        <button class="btn btn--primary" id="ai-btn">Get AI Insights ✨</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/ai.js"></script>
+  <script>
+    // ───── Toast Helper ─────
+    function showToast(message, type = 'info') {
+      const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span>${message}</span>`;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => { toast.classList.add('removing'); toast.addEventListener('animationend', () => toast.remove()); }, 3500);
+    }
+
+    // ───── Chart Theme Helpers ─────
+    function getThemeColor(varName) {
+      return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    }
+
+    // ───── Category Doughnut Chart ─────
+    const categoryTotals = getCategoryTotals();
+    const categoryLabels = Object.keys(categoryTotals);
+    const categoryData = Object.values(categoryTotals);
+    const chartColors = ['#6c63ff','#ff6b6b','#2ecc71','#f1c40f','#63b3ff','#ff63c8','#a040b8','#ff8a5c'];
+
+    let categoryChart = null;
+    const categoryArea = document.getElementById('category-chart-area');
+
+    if (categoryLabels.length === 0) {
+      categoryArea.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state__icon">🍩</div>
+          <p class="empty-state__text">No expense data yet</p>
+        </div>`;
+    } else {
+      categoryChart = new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+          labels: categoryLabels,
+          datasets: [{
+            data: categoryData,
+            backgroundColor: chartColors.slice(0, categoryLabels.length),
+            borderWidth: 0,
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: getThemeColor('--text-primary'),
+                padding: 16,
+                usePointStyle: true,
+                pointStyleWidth: 10,
+                font: { family: "'Inter', sans-serif", size: 12 }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    // ───── Income vs Expenses Bar Chart ─────
+    const totalIncome = getTotalIncome();
+    const totalExpenses = getTotalExpenses();
+
+    const overviewChart = new Chart(document.getElementById('overviewChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Income', 'Expenses'],
+        datasets: [{
+          data: [totalIncome, totalExpenses],
+          backgroundColor: ['#2ecc71', '#ff6b6b'],
+          borderRadius: 8,
+          borderSkipped: false,
+          barPercentage: 0.5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: getThemeColor('--text-secondary'),
+              font: { family: "'Inter', sans-serif", size: 12, weight: '600' }
+            },
+            border: { display: false }
+          },
+          y: {
+            grid: { color: getThemeColor('--border') },
+            ticks: {
+              color: getThemeColor('--text-secondary'),
+              font: { family: "'Inter', sans-serif", size: 11 },
+              callback: function(value) { return formatCurrency(value); }
+            },
+            border: { display: false },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // ───── AI Insights ─────
+    const aiBtn = document.getElementById('ai-btn');
+    const aiBody = document.getElementById('ai-body');
+
+    aiBtn.addEventListener('click', async () => {
+      aiBtn.disabled = true;
+      aiBody.innerHTML = `
+        <div class="loading-card">
+          <div class="spinner"></div>
+          <p class="loading-card__text">Analyzing your finances…</p>
+        </div>`;
+
+      try {
+        const balance = getBalance();
+        const income = getTotalIncome();
+        const expenses = getTotalExpenses();
+        const categories = JSON.stringify(getCategoryTotals());
+
+        const prompt = `My balance is ${formatCurrency(balance)}. My total income is ${formatCurrency(income)}. My total expenses are ${formatCurrency(expenses)}. My spending by category is: ${categories}. Give me 3 specific, actionable tips to improve my finances. Be concise.`;
+
+        const reply = await askAI(prompt);
+        aiBody.innerHTML = `<p>${reply}</p>`;
+        showToast('AI insights generated!', 'success');
+      } catch (err) {
+        aiBody.innerHTML = `<p style="color: var(--expense);">⚠️ Failed to get AI insights. Please try again later.</p>`;
+        showToast('Failed to fetch AI insights', 'error');
+      } finally {
+        aiBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

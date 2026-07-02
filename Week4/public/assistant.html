@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Chat with your AI financial assistant for personalized budgeting, saving, and investing advice." />
+  <title>AI Assistant — FinTrack</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">💰</span>
+      <span class="sidebar__name">FinTrack</span>
+    </div>
+    <ul class="sidebar__nav">
+      <li><a href="/" class="sidebar__link" data-page="home"><span class="sidebar__icon">🏠</span><span>Home</span></a></li>
+      <li><a href="/dashboard.html" class="sidebar__link" data-page="dashboard"><span class="sidebar__icon">📊</span><span>Dashboard</span></a></li>
+      <li><a href="/add-transaction.html" class="sidebar__link" data-page="add"><span class="sidebar__icon">➕</span><span>Add</span></a></li>
+      <li><a href="/history.html" class="sidebar__link" data-page="history"><span class="sidebar__icon">📜</span><span>History</span></a></li>
+      <li><a href="/reports.html" class="sidebar__link" data-page="reports"><span class="sidebar__icon">📈</span><span>Reports</span></a></li>
+      <li><a href="/assistant.html" class="sidebar__link active" data-page="assistant"><span class="sidebar__icon">🤖</span><span>AI</span></a></li>
+      <li><a href="/settings.html" class="sidebar__link" data-page="settings"><span class="sidebar__icon">⚙️</span><span>Settings</span></a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-header__title">🤖 AI Financial Assistant</h1>
+      <p class="page-header__subtitle">Ask anything about your finances</p>
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="chat">
+      <!-- Messages -->
+      <div class="chat__messages" id="chat-messages">
+        <div class="chat__bubble chat__bubble--ai">
+          Hi! I'm your AI financial assistant. Ask me anything about budgeting, saving, investing, or your spending habits. 💡
+        </div>
+      </div>
+
+      <!-- Quick Prompts -->
+      <div class="quick-prompts" id="quick-prompts">
+        <button class="quick-prompt" data-prompt="How can I save more?">How can I save more?</button>
+        <button class="quick-prompt" data-prompt="Analyze my spending">Analyze my spending</button>
+        <button class="quick-prompt" data-prompt="Budget tips for beginners">Budget tips for beginners</button>
+        <button class="quick-prompt" data-prompt="How to start investing?">How to start investing?</button>
+      </div>
+
+      <!-- Input Bar -->
+      <form class="chat__input-bar" id="chat-form" autocomplete="off">
+        <input type="text" class="chat__input" id="chat-input" placeholder="Ask me anything about finance..." />
+        <button type="submit" class="btn btn--primary">📤</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/ai.js"></script>
+  <script>
+    // ───── Toast Helper ─────
+    function showToast(message, type = 'info') {
+      const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span>${message}</span>`;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => { toast.classList.add('removing'); toast.addEventListener('animationend', () => toast.remove()); }, 3500);
+    }
+
+    // ───── DOM References ─────
+    const chatMessages = document.getElementById('chat-messages');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+
+    // ───── Helper: Add Bubble ─────
+    function addBubble(text, type) {
+      const bubble = document.createElement('div');
+      bubble.className = `chat__bubble chat__bubble--${type}`;
+      bubble.textContent = text;
+      chatMessages.appendChild(bubble);
+      scrollToBottom();
+      return bubble;
+    }
+
+    // ───── Helper: Typing Indicator ─────
+    function showTyping() {
+      const typing = document.createElement('div');
+      typing.className = 'chat__typing';
+      typing.id = 'typing-indicator';
+      typing.innerHTML = '<div class="chat__typing-dot"></div><div class="chat__typing-dot"></div><div class="chat__typing-dot"></div>';
+      chatMessages.appendChild(typing);
+      scrollToBottom();
+      return typing;
+    }
+
+    function removeTyping() {
+      const el = document.getElementById('typing-indicator');
+      if (el) el.remove();
+    }
+
+    // ───── Helper: Scroll to Bottom ─────
+    function scrollToBottom() {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // ───── Send Message ─────
+    async function sendMessage(messageText) {
+      const text = messageText.trim();
+      if (!text) return;
+
+      // Add user bubble
+      addBubble(text, 'user');
+      chatInput.value = '';
+
+      // Show typing
+      const typingEl = showTyping();
+
+      try {
+        // Build context-aware prompt
+        const balance = formatCurrency(getBalance());
+        const categories = JSON.stringify(getCategoryTotals());
+        const budget = formatCurrency(getSettings().budget);
+
+        const prompt = `You are a helpful financial advisor. The user's current balance is ${balance}. Their spending by category: ${categories}. Their budget is ${budget}.\n\nUser question: ${text}\n\nProvide a helpful, concise response.`;
+
+        const reply = await askAI(prompt);
+        removeTyping();
+        addBubble(reply, 'ai');
+      } catch (err) {
+        removeTyping();
+        addBubble('Sorry, I couldn\'t process that. Please try again.', 'error');
+      }
+    }
+
+    // ───── Form Submit ─────
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      sendMessage(chatInput.value);
+    });
+
+    // ───── Quick Prompts ─────
+    document.querySelectorAll('.quick-prompt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const promptText = btn.getAttribute('data-prompt');
+        chatInput.value = promptText;
+        sendMessage(promptText);
+      });
+    });
+  </script>
+</body>
+</html>

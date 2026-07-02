@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Add a new income or expense transaction to your FinTrack finance tracker." />
+  <title>Add Transaction — FinTrack</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">💰</span>
+      <span class="sidebar__name">FinTrack</span>
+    </div>
+    <ul class="sidebar__nav">
+      <li><a href="/" class="sidebar__link" data-page="home"><span class="sidebar__icon">🏠</span><span>Home</span></a></li>
+      <li><a href="/dashboard.html" class="sidebar__link" data-page="dashboard"><span class="sidebar__icon">📊</span><span>Dashboard</span></a></li>
+      <li><a href="/add-transaction.html" class="sidebar__link active" data-page="add"><span class="sidebar__icon">➕</span><span>Add</span></a></li>
+      <li><a href="/history.html" class="sidebar__link" data-page="history"><span class="sidebar__icon">📜</span><span>History</span></a></li>
+      <li><a href="/reports.html" class="sidebar__link" data-page="reports"><span class="sidebar__icon">📈</span><span>Reports</span></a></li>
+      <li><a href="/assistant.html" class="sidebar__link" data-page="assistant"><span class="sidebar__icon">🤖</span><span>AI</span></a></li>
+      <li><a href="/settings.html" class="sidebar__link" data-page="settings"><span class="sidebar__icon">⚙️</span><span>Settings</span></a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-header__title">➕ Add Transaction</h1>
+      <p class="page-header__subtitle">Log a new income or expense</p>
+    </div>
+
+    <div class="card">
+      <form id="tx-form" autocomplete="off">
+        <!-- Description -->
+        <div class="form-group">
+          <label class="form-label" for="description">Description</label>
+          <input class="form-input" type="text" id="description" placeholder="e.g. Groceries, Salary, Rent..." required />
+        </div>
+
+        <!-- Amount -->
+        <div class="form-group">
+          <label class="form-label" for="amount">Amount</label>
+          <input class="form-input" type="number" id="amount" min="0.01" step="0.01" placeholder="Enter amount" required />
+        </div>
+
+        <!-- Type Toggle -->
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <div class="type-toggle" id="type-toggle">
+            <button type="button" class="type-toggle__option" data-type="income">📈 Income</button>
+            <button type="button" class="type-toggle__option active--expense" data-type="expense">📉 Expense</button>
+          </div>
+        </div>
+
+        <!-- Category -->
+        <div class="form-group">
+          <label class="form-label" for="category">Category</label>
+          <select class="form-select" id="category">
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Rent">Rent</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Health">Health</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Education">Education</option>
+            <option value="Salary">Salary</option>
+            <option value="Freelance">Freelance</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <!-- Date -->
+        <div class="form-group">
+          <label class="form-label" for="date">Date</label>
+          <input class="form-input" type="date" id="date" required />
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn btn--primary" style="width:100%">Add Transaction ✅</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="js/storage.js"></script>
+  <script>
+    // ===== Toast Helper =====
+    function showToast(message, type = 'info') {
+      const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span>${message}</span>`;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => { toast.classList.add('removing'); toast.addEventListener('animationend', () => toast.remove()); }, 3500);
+    }
+
+    // ===== DOM References =====
+    const form = document.getElementById('tx-form');
+    const descInput = document.getElementById('description');
+    const amountInput = document.getElementById('amount');
+    const dateInput = document.getElementById('date');
+    const categorySelect = document.getElementById('category');
+    const typeToggle = document.getElementById('type-toggle');
+    const toggleOptions = typeToggle.querySelectorAll('.type-toggle__option');
+
+    let selectedType = 'expense';
+
+    // ===== Set today's date as default =====
+    dateInput.value = new Date().toISOString().split('T')[0];
+
+    // ===== Type Toggle Logic =====
+    toggleOptions.forEach(btn => {
+      btn.addEventListener('click', () => {
+        toggleOptions.forEach(b => {
+          b.classList.remove('active--income', 'active--expense');
+        });
+        const type = btn.dataset.type;
+        selectedType = type;
+        btn.classList.add(type === 'income' ? 'active--income' : 'active--expense');
+      });
+    });
+
+    // ===== Shake helper =====
+    function shakeField(el) {
+      el.classList.add('shake');
+      el.addEventListener('animationend', () => el.classList.remove('shake'), { once: true });
+    }
+
+    // ===== Form Submission =====
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const description = descInput.value.trim();
+      const amount = amountInput.value;
+
+      // Validation
+      if (!description) {
+        shakeField(descInput);
+        showToast('Please enter a description', 'error');
+        descInput.focus();
+        return;
+      }
+
+      if (!amount || Number(amount) <= 0) {
+        shakeField(amountInput);
+        showToast('Please enter a valid amount', 'error');
+        amountInput.focus();
+        return;
+      }
+
+      // Add transaction
+      addTransaction({
+        description,
+        amount: Number(amount),
+        type: selectedType,
+        category: categorySelect.value,
+        date: dateInput.value
+      });
+
+      showToast('Transaction added!', 'success');
+
+      // Reset form
+      form.reset();
+      dateInput.value = new Date().toISOString().split('T')[0];
+      selectedType = 'expense';
+      toggleOptions.forEach(b => b.classList.remove('active--income', 'active--expense'));
+      toggleOptions[1].classList.add('active--expense');
+
+      // Keep focus for adding another
+      descInput.focus();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "finance-tracker",
+  "version": "1.0.0",
+  "description": "AI-powered Finance Tracker with Gemini API integration",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "finance",
+    "tracker",
+    "gemini",
+    "ai"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^2.10.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

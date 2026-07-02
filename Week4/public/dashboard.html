@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="FinTrack Dashboard — Your financial overview at a glance with balance, income, expenses, and recent transactions." />
+  <title>Dashboard — FinTrack</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">💰</span>
+      <span class="sidebar__name">FinTrack</span>
+    </div>
+    <ul class="sidebar__nav">
+      <li><a href="/" class="sidebar__link" data-page="home"><span class="sidebar__icon">🏠</span><span>Home</span></a></li>
+      <li><a href="/dashboard.html" class="sidebar__link active" data-page="dashboard"><span class="sidebar__icon">📊</span><span>Dashboard</span></a></li>
+      <li><a href="/add-transaction.html" class="sidebar__link" data-page="add"><span class="sidebar__icon">➕</span><span>Add</span></a></li>
+      <li><a href="/history.html" class="sidebar__link" data-page="history"><span class="sidebar__icon">📜</span><span>History</span></a></li>
+      <li><a href="/reports.html" class="sidebar__link" data-page="reports"><span class="sidebar__icon">📈</span><span>Reports</span></a></li>
+      <li><a href="/assistant.html" class="sidebar__link" data-page="assistant"><span class="sidebar__icon">🤖</span><span>AI</span></a></li>
+      <li><a href="/settings.html" class="sidebar__link" data-page="settings"><span class="sidebar__icon">⚙️</span><span>Settings</span></a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-header__title">📊 Dashboard</h1>
+      <p class="page-header__subtitle">Your financial overview at a glance</p>
+    </div>
+
+    <!-- Summary Cards Row -->
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="summary-card__icon">💰</div>
+        <div class="summary-card__label">Balance</div>
+        <div class="summary-card__value summary-card__value--balance" id="balance-value">₹0</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card__icon">📈</div>
+        <div class="summary-card__label">Income</div>
+        <div class="summary-card__value summary-card__value--income" id="income-value">₹0</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card__icon">📉</div>
+        <div class="summary-card__label">Expenses</div>
+        <div class="summary-card__value summary-card__value--expense" id="expense-value">₹0</div>
+      </div>
+    </div>
+
+    <!-- Budget Progress Section -->
+    <div class="card mb-24" id="budget-section">
+      <div class="flex justify-between items-center mb-16">
+        <h2 style="font-size:1.1rem;font-weight:700;">🎯 Monthly Budget</h2>
+        <span id="budget-text" class="page-header__subtitle"></span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-bar__fill" id="budget-fill"></div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions Section -->
+    <div class="card mb-24">
+      <div class="flex justify-between items-center mb-16">
+        <h2 style="font-size:1.1rem;font-weight:700;">📋 Recent Transactions</h2>
+        <a href="/history.html" class="btn btn--secondary btn--sm">View All →</a>
+      </div>
+      <div id="recent-tx"></div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="flex gap-12">
+      <a href="/add-transaction.html" class="btn btn--primary">➕ Add Transaction</a>
+      <a href="/reports.html" class="btn btn--secondary">📈 View Reports</a>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="js/storage.js"></script>
+  <script>
+    function showToast(message, type = 'info') {
+      const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span>${message}</span>`;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => { toast.classList.add('removing'); toast.addEventListener('animationend', () => toast.remove()); }, 3500);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // --- Summary Cards ---
+      document.getElementById('balance-value').textContent = formatCurrency(getBalance());
+      document.getElementById('income-value').textContent = formatCurrency(getTotalIncome());
+      document.getElementById('expense-value').textContent = formatCurrency(getTotalExpenses());
+
+      // --- Budget Progress ---
+      const settings = getSettings();
+      const budget = settings.budget || 0;
+      const expenses = getTotalExpenses();
+      const pct = budget > 0 ? Math.min((expenses / budget) * 100, 100) : 0;
+      const isOver = expenses > budget && budget > 0;
+
+      document.getElementById('budget-text').textContent =
+        `${formatCurrency(expenses)} / ${formatCurrency(budget)}`;
+
+      const fill = document.getElementById('budget-fill');
+      fill.style.width = (budget > 0 ? (expenses / budget) * 100 : 0) + '%';
+      if (isOver) fill.classList.add('progress-bar__fill--over');
+
+      // --- Recent Transactions ---
+      const txContainer = document.getElementById('recent-tx');
+      const transactions = getTransactions()
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 5);
+
+      if (transactions.length === 0) {
+        txContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state__icon">📝</div>
+            <p class="empty-state__text">No transactions yet</p>
+            <a href="/add-transaction.html" class="btn btn--primary btn--sm">➕ Add your first transaction</a>
+          </div>`;
+        return;
+      }
+
+      let html = '<div class="tx-list">';
+      transactions.forEach(tx => {
+        const isIncome = tx.type === 'income';
+        const icon = isIncome ? '📈' : '📉';
+        const typeClass = isIncome ? 'income' : 'expense';
+        const sign = isIncome ? '+' : '-';
+        html += `
+          <div class="tx-item">
+            <div class="tx-item__icon tx-item__icon--${typeClass}">${icon}</div>
+            <div class="tx-item__details">
+              <div class="tx-item__desc">${tx.description}</div>
+              <div class="tx-item__meta">
+                <span class="badge badge--category">${tx.category}</span>
+                <span>${tx.date}</span>
+              </div>
+            </div>
+            <div class="tx-item__amount tx-item__amount--${typeClass}">
+              ${sign}${formatCurrency(tx.amount)}
+            </div>
+          </div>`;
+      });
+      html += '</div>';
+      txContainer.innerHTML = html;
+    });
+  </script>
+</body>
+</html>

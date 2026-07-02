@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Customize your FinTrack experience — set budget limits, currency, theme, and manage your data." />
+  <title>Settings — FinTrack</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">💰</span>
+      <span class="sidebar__name">FinTrack</span>
+    </div>
+    <ul class="sidebar__nav">
+      <li><a href="/" class="sidebar__link" data-page="home"><span class="sidebar__icon">🏠</span><span>Home</span></a></li>
+      <li><a href="/dashboard.html" class="sidebar__link" data-page="dashboard"><span class="sidebar__icon">📊</span><span>Dashboard</span></a></li>
+      <li><a href="/add-transaction.html" class="sidebar__link" data-page="add"><span class="sidebar__icon">➕</span><span>Add</span></a></li>
+      <li><a href="/history.html" class="sidebar__link" data-page="history"><span class="sidebar__icon">📜</span><span>History</span></a></li>
+      <li><a href="/reports.html" class="sidebar__link" data-page="reports"><span class="sidebar__icon">📈</span><span>Reports</span></a></li>
+      <li><a href="/assistant.html" class="sidebar__link" data-page="assistant"><span class="sidebar__icon">🤖</span><span>AI</span></a></li>
+      <li><a href="/settings.html" class="sidebar__link active" data-page="settings"><span class="sidebar__icon">⚙️</span><span>Settings</span></a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-header__title">⚙️ Settings</h1>
+      <p class="page-header__subtitle">Customize your FinTrack experience</p>
+    </div>
+
+    <!-- Settings Card -->
+    <div class="card mb-24">
+      <!-- Monthly Budget -->
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">🎯 Monthly Budget</div>
+          <div class="setting-row__desc">Set your monthly spending limit</div>
+        </div>
+        <input type="number" class="form-input" id="budget-input" min="0" step="100" placeholder="5000" />
+      </div>
+
+      <!-- Currency -->
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">💱 Currency</div>
+          <div class="setting-row__desc">Choose your preferred currency symbol</div>
+        </div>
+        <select class="form-select" id="currency-select">
+          <option value="₹">₹ (INR)</option>
+          <option value="$">$ (USD)</option>
+          <option value="€">€ (EUR)</option>
+          <option value="£">£ (GBP)</option>
+        </select>
+      </div>
+
+      <!-- Dark Mode -->
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">🌙 Dark Mode</div>
+          <div class="setting-row__desc">Toggle between dark and light themes</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="darkmode-toggle" />
+          <span class="toggle-switch__slider"></span>
+        </label>
+      </div>
+
+      <!-- Save Button -->
+      <div class="mt-24">
+        <button class="btn btn--primary" id="save-btn">Save Settings 💾</button>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card">
+      <div class="mb-16">
+        <h2 class="page-header__title" style="color: var(--expense); font-size: 1.2rem;">⚠️ Danger Zone</h2>
+        <p class="page-header__subtitle">These actions cannot be undone</p>
+      </div>
+      <button class="btn btn--danger" id="reset-btn">Reset All Data 🗑️</button>
+    </div>
+  </main>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay hidden" id="reset-modal">
+    <div class="modal">
+      <div class="modal__icon">⚠️</div>
+      <h3 class="modal__title">Reset All Data?</h3>
+      <p class="modal__text">This will permanently delete all transactions and settings.</p>
+      <div class="modal__actions">
+        <button class="btn btn--secondary" id="modal-cancel">Cancel</button>
+        <button class="btn btn--danger" id="modal-confirm">Yes, Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="js/storage.js"></script>
+  <script>
+    // ───── Toast Helper ─────
+    function showToast(message, type = 'info') {
+      const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span>${message}</span>`;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => { toast.classList.add('removing'); toast.addEventListener('animationend', () => toast.remove()); }, 3500);
+    }
+
+    // ───── DOM References ─────
+    const budgetInput = document.getElementById('budget-input');
+    const currencySelect = document.getElementById('currency-select');
+    const darkmodeToggle = document.getElementById('darkmode-toggle');
+    const saveBtn = document.getElementById('save-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const resetModal = document.getElementById('reset-modal');
+    const modalCancel = document.getElementById('modal-cancel');
+    const modalConfirm = document.getElementById('modal-confirm');
+
+    // ───── Load Current Settings ─────
+    function loadSettings() {
+      const settings = getSettings();
+      budgetInput.value = settings.budget;
+      currencySelect.value = settings.currency;
+      darkmodeToggle.checked = settings.darkMode;
+    }
+
+    loadSettings();
+
+    // ───── Dark Mode Toggle (Live) ─────
+    darkmodeToggle.addEventListener('change', () => {
+      if (darkmodeToggle.checked) {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    });
+
+    // ───── Save Settings ─────
+    saveBtn.addEventListener('click', () => {
+      const newSettings = {
+        budget: Number(budgetInput.value) || 5000,
+        currency: currencySelect.value,
+        darkMode: darkmodeToggle.checked
+      };
+
+      saveSettings(newSettings);
+      initTheme();
+      showToast('Settings saved successfully!', 'success');
+    });
+
+    // ───── Reset Data Modal ─────
+    resetBtn.addEventListener('click', () => {
+      resetModal.classList.remove('hidden');
+    });
+
+    modalCancel.addEventListener('click', () => {
+      resetModal.classList.add('hidden');
+    });
+
+    // Close modal on overlay click
+    resetModal.addEventListener('click', (e) => {
+      if (e.target === resetModal) {
+        resetModal.classList.add('hidden');
+      }
+    });
+
+    modalConfirm.addEventListener('click', () => {
+      clearTransactions();
+      saveSettings({ budget: 5000, currency: '₹', darkMode: true });
+      showToast('All data has been reset', 'success');
+      resetModal.classList.add('hidden');
+      setTimeout(() => location.reload(), 1000);
+    });
+  </script>
+</body>
+</html>

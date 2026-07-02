@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="View and manage your complete transaction history in FinTrack." />
+  <title>Transaction History — FinTrack</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">💰</span>
+      <span class="sidebar__name">FinTrack</span>
+    </div>
+    <ul class="sidebar__nav">
+      <li><a href="/" class="sidebar__link" data-page="home"><span class="sidebar__icon">🏠</span><span>Home</span></a></li>
+      <li><a href="/dashboard.html" class="sidebar__link" data-page="dashboard"><span class="sidebar__icon">📊</span><span>Dashboard</span></a></li>
+      <li><a href="/add-transaction.html" class="sidebar__link" data-page="add"><span class="sidebar__icon">➕</span><span>Add</span></a></li>
+      <li><a href="/history.html" class="sidebar__link active" data-page="history"><span class="sidebar__icon">📜</span><span>History</span></a></li>
+      <li><a href="/reports.html" class="sidebar__link" data-page="reports"><span class="sidebar__icon">📈</span><span>Reports</span></a></li>
+      <li><a href="/assistant.html" class="sidebar__link" data-page="assistant"><span class="sidebar__icon">🤖</span><span>AI</span></a></li>
+      <li><a href="/settings.html" class="sidebar__link" data-page="settings"><span class="sidebar__icon">⚙️</span><span>Settings</span></a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-header__title">📜 Transaction History</h1>
+      <p class="page-header__subtitle">All your transactions in one place</p>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <select class="form-select" id="filter-type">
+        <option value="all">All Types</option>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+      </select>
+      <select class="form-select" id="filter-category">
+        <option value="all">All Categories</option>
+        <option value="Food">Food</option>
+        <option value="Transport">Transport</option>
+        <option value="Rent">Rent</option>
+        <option value="Utilities">Utilities</option>
+        <option value="Entertainment">Entertainment</option>
+        <option value="Health">Health</option>
+        <option value="Shopping">Shopping</option>
+        <option value="Education">Education</option>
+        <option value="Salary">Salary</option>
+        <option value="Freelance">Freelance</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <!-- Transaction List -->
+    <div class="tx-list" id="tx-list"></div>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="js/storage.js"></script>
+  <script>
+    // ===== Toast Helper =====
+    function showToast(message, type = 'info') {
+      const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span>${message}</span>`;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => { toast.classList.add('removing'); toast.addEventListener('animationend', () => toast.remove()); }, 3500);
+    }
+
+    // ===== DOM References =====
+    const txListEl = document.getElementById('tx-list');
+    const filterType = document.getElementById('filter-type');
+    const filterCategory = document.getElementById('filter-category');
+
+    // ===== Render Transactions =====
+    function renderTransactions() {
+      const typeVal = filterType.value;
+      const catVal = filterCategory.value;
+
+      let transactions = getTransactions();
+
+      // Sort newest first by date
+      transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // Apply filters
+      if (typeVal !== 'all') {
+        transactions = transactions.filter(tx => tx.type === typeVal);
+      }
+      if (catVal !== 'all') {
+        transactions = transactions.filter(tx => tx.category === catVal);
+      }
+
+      // Empty state
+      if (transactions.length === 0) {
+        txListEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state__icon">📭</div>
+            <p class="empty-state__text">No transactions yet. Add one to get started!</p>
+            <a href="/add-transaction.html" class="btn btn--primary btn--sm">➕ Add Transaction</a>
+          </div>
+        `;
+        return;
+      }
+
+      txListEl.innerHTML = transactions.map(tx => {
+        const isIncome = tx.type === 'income';
+        const icon = isIncome ? '📈' : '📉';
+        const iconClass = isIncome ? 'tx-item__icon--income' : 'tx-item__icon--expense';
+        const amountClass = isIncome ? 'tx-item__amount--income' : 'tx-item__amount--expense';
+        const prefix = isIncome ? '+' : '-';
+        const formattedDate = new Date(tx.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+        return `
+          <div class="tx-item" data-id="${tx.id}">
+            <div class="tx-item__icon ${iconClass}">${icon}</div>
+            <div class="tx-item__details">
+              <div class="tx-item__desc">${tx.description}</div>
+              <div class="tx-item__meta">
+                <span class="badge badge--category">${tx.category || 'Other'}</span>
+                <span>${formattedDate}</span>
+              </div>
+            </div>
+            <span class="tx-item__amount ${amountClass}">${prefix}${formatCurrency(tx.amount)}</span>
+            <button class="tx-item__delete" title="Delete transaction" onclick="handleDelete('${tx.id}', this)">🗑️</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ===== Delete Handler =====
+    function handleDelete(id, btnEl) {
+      const txItem = btnEl.closest('.tx-item');
+      txItem.classList.add('removing');
+      txItem.addEventListener('animationend', () => {
+        deleteTransaction(id);
+        renderTransactions();
+        showToast('Transaction deleted', 'success');
+      }, { once: true });
+    }
+
+    // ===== Filter Listeners =====
+    filterType.addEventListener('change', renderTransactions);
+    filterCategory.addEventListener('change', renderTransactions);
+
+    // ===== Initial Render =====
+    renderTransactions();
+  </script>
+</body>
+</html>
